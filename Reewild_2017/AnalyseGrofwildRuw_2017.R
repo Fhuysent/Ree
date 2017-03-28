@@ -9,57 +9,41 @@ library(gridExtra)
 library(sqldf)
 library(reshape)
 library(RODBC)
+library(RPostgreSQL)
 
 setwd("Q:/OG_Faunabeheer/Projecten/Lopende projecten/INBOPRJ-10218 - Analyse en rapportage van jachtwilddata in Vlaanderen/Grofwild")
 
 # 1. Gegevens ophalen
 # --------------------------------------------------------------------------------------------------------------------------
 
-#maak verbinding
-verbinding <- odbcDriverConnect("DRIVER=SQL Server; Server=INBOSQL03\\PRD; Database=D0106pr00_Autopsie")
+#maak verbinding####
+#Run connect batch file first
+drv <- dbDriver("PostgreSQL")
 
-sqlTables(
-  verbinding,
-  schema = "dbo",
-  tableType = "TABLE"
-)$TABLE_NAME
-
-# Haal relevante tabellen op:
+verbinding <- dbConnect(drv, dbname="autopsies",host="127.0.0.1",port=5432,user="frank",password="lQzgDqS5kFiXdUFTqw9UorObsL0WBVXLwZONoFWtIs" )
 
 # voor de meldingsformulieren grofwild:
-dbo_Meldingsformulier <- sqlFetch(verbinding, "dbo.Meldingsformulier")
-dbo_Groep <- sqlFetch(verbinding, "dbo.Groep")
-dbo_Leeftijd <- sqlFetch(verbinding, "dbo.Leeftijd")
-dbo_Geslacht <- sqlFetch(verbinding, "dbo.Geslacht")
-dbo_Jachtmethode <- sqlFetch(verbinding, "dbo.Jachtmethode")
-dbo_WettelijkKader <- sqlFetch(verbinding, "dbo.WettelijkKader")
-dbo_Eloket <- sqlFetch(verbinding, "dbo.Eloket")
-
-#dbo_Diersoort <- sqlFetch(verbinding, "dbo.Diersoort")
-#dbo_DierTelling <- sqlFetch(verbinding, "dbo.DierTelling")
-#dbo_Provincie <- sqlFetch(verbinding, "dbo.Provincie")
-dbo_Rapport <- sqlFetch(verbinding, "dbo.Rapport")
-dbo_RapportStatus <- sqlFetch(verbinding, "dbo.RapportStatus")
-#dbo_Telling <- sqlFetch(verbinding, "dbo.Telling")
-#dbo_TellingType <- sqlFetch(verbinding, "dbo.TellingType")
-#dbo_WildBeheerEenheid <- sqlFetch(verbinding, "dbo.WildBeheerEenheid")
-#dbo_Hoedanigheid <- sqlFetch(verbinding, "dbo.Hoedanigheid")
-#dbo_Land <- sqlFetch(verbinding, "dbo.Land")
-#dbo_Indiener <- sqlFetch(verbinding, "dbo.Indiener")
+dbo_Meldingsformulier <- dbReadTable(verbinding, c("public", "meldingsformulier"))
+dbo_Groep <- dbReadTable(verbinding, c("public", "groep"))
+dbo_Leeftijd <- dbReadTable(verbinding, c("public", "leeftijd"))
+dbo_Geslacht <- dbReadTable(verbinding, c("public", "geslacht"))
+dbo_Jachtmethode <- dbReadTable(verbinding, c("public", "jachtmethode"))
+dbo_WettelijkKader <- dbReadTable(verbinding, c("public", "wettelijk_kader"))
+dbo_Eloket <- dbReadTable(verbinding, c("public", "eloket"))
+dbo_Diersoort <- dbReadTable(verbinding, c("public", "diersoort"))
+dbo_RapportStatus <- dbReadTable(verbinding, c("public", "rapport_status"))
+dbo_Rapport <- dbReadTable(verbinding, c("public", "rapport"))
 
 # voor de identificaties grofwild:
-dbo_Identificatie <- sqlFetch(verbinding, "dbo.Identificatie")
-dbo_Staal <- sqlFetch(verbinding, "dbo.Staal")
-dbo_Leeftijd <- sqlFetch(verbinding, "dbo.Leeftijd")
-dbo_Geslacht <- sqlFetch(verbinding, "dbo.Geslacht")
-dbo_Diersoort <- sqlFetch(verbinding, "dbo.Diersoort")
-dbo_Doodsoorzaak <- sqlFetch(verbinding, "dbo.Doodsoorzaak")
-dbo_Vindplaats <- sqlFetch(verbinding, "dbo.Vindplaats")
-dbo_Onderkaak <- sqlFetch(verbinding, "dbo.Onderkaak")
+dbo_Identificatie <- dbReadTable(verbinding, c("public", "identificatie"))
+dbo_Staal <- dbReadTable(verbinding, c("public", "staal"))
+dbo_Doodsoorzaak <- dbReadTable(verbinding, c("public", "doodsoorzaak"))
+dbo_Vindplaats <- dbReadTable(verbinding, c("public", "vindplaats"))
+dbo_Onderkaak <- dbReadTable(verbinding, c("public", "onderkaak"))
 
-# sluit de verbinding
-odbcClose(verbinding)
-remove(verbinding)
+# Close PostgreSQL connection 
+dbDisconnect(verbinding)
+
 
 #2. Gegevens opkuisen
 #-----------------------------------------------------------------------------------------------------------------
