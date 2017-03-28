@@ -11,7 +11,7 @@ library(reshape)
 library(RODBC)
 library(RPostgreSQL)
 
-setwd("Q:/OG_Faunabeheer/Projecten/Lopende projecten/INBOPRJ-10218 - Analyse en rapportage van jachtwilddata in Vlaanderen/Grofwild")
+setwd("Q:/OG_Faunabeheer/Projecten/Lopende projecten/INBOPRJ-10218 - Analyse en rapportage van jachtwilddata in Vlaanderen/Grofwild/Ree/R/2017")
 
 # 1. Gegevens ophalen
 # --------------------------------------------------------------------------------------------------------------------------
@@ -49,17 +49,16 @@ dbDisconnect(verbinding)
 #-----------------------------------------------------------------------------------------------------------------
 
 ##Versie=NA is ingegeven door Erik, maar krijgen ook LaatsteVersi=1, dus filter op LaatsteVersie
-Meldingen <- subset(dbo_Meldingsformulier, LaatsteVersie==1)
-Meldingen <- merge(Meldingen, dbo_Eloket, by.x="ID", by.y="MeldingsformulierID", all.x=TRUE)
+Meldingen <- subset(dbo_Meldingsformulier, laatste_versie==TRUE)
 ##RapportStatus 3 en 4 zitten er niet meer in, wel nog NA's, die mogen 2 worden
-Meldingen$RapportStatusID[is.na(Meldingen$RapportStatusID)] <- 5
-Meldingen <- subset(Meldingen, RapportStatusID!=1)
+#Meldingen$RapportStatusID[is.na(Meldingen$RapportStatusID)] <- 5
+#Meldingen <- subset(Meldingen, RapportStatusID!=1)
 ##Enkel Ree
-Meldingen <-subset(Meldingen, DiersoortID==5)
+Meldingen <-subset(Meldingen, diersoort_id==5)
 ##Controle afschotdatum en jaar labelnummer komen overeen?
 controle <- Meldingen
-controle$test <- substr(controle$LabelNummer,5,8)
-controle$test2 <- as.character(controle$AfschotDatum, "%Y")
+controle$test <- substr(controle$label_nummer,5,8)
+controle$test2 <- as.character(controle$afschot_datum, "%Y")
 controle$test <- as.numeric(controle$test)
 controle$test2 <- as.numeric(controle$test2)
 controle$test3 <- controle$test-controle$test2
@@ -67,35 +66,35 @@ table(controle$test3)
 fouten <- subset(controle, test3!=0)
 remove(controle)
 
-Meldingen$Jaar <- as.character(Meldingen$AfschotDatum, "%Y")
+Meldingen$Jaar <- as.character(Meldingen$afschot_datum, "%Y")
 
 # Data omzetten naar namen in script
-Meldingen$Registernr <- Meldingen$NummerAfschotplan
+Meldingen$NummerAfschotplan <- Meldingen$nummer_afschotplan
 Meldingen$Provincie <- "Limburg"
-Meldingen$Provincie[substr(Meldingen$Registernr,1,2)=="AN"] <- "Antwerpen"
-Meldingen$Provincie[substr(Meldingen$Registernr,1,2)=="VB"] <- "Vlaams-Brabant"
-Meldingen$Provincie[substr(Meldingen$Registernr,1,2)=="WV"] <- "West-Vlaanderen"
-Meldingen$Provincie[substr(Meldingen$Registernr,1,2)=="OV"] <- "Oost-Vlaanderen"
-Meldingen$Labelnummer <- Meldingen$LabelNummer
+Meldingen$Provincie[substr(Meldingen$nummer_afschotplan,1,2)=="AN"] <- "Antwerpen"
+Meldingen$Provincie[substr(Meldingen$nummer_afschotplan,1,2)=="VB"] <- "Vlaams-Brabant"
+Meldingen$Provincie[substr(Meldingen$nummer_afschotplan,1,2)=="WV"] <- "West-Vlaanderen"
+Meldingen$Provincie[substr(Meldingen$nummer_afschotplanr,1,2)=="OV"] <- "Oost-Vlaanderen"
+Meldingen$LabelNummer <- Meldingen$label_nummer
 Meldingen$Jaar <- factor(Meldingen$Jaar)
-Meldingen$Labeltype <- substr(Meldingen$LabelNummer,13,13)
+Meldingen$Labeltype <- substr(Meldingen$label_nummer,13,13)
 Meldingen$Labeltype[Meldingen$Labeltype=="B"] <- "Bokken"
 Meldingen$Labeltype[Meldingen$Labeltype=="G"] <- "Geiten"
 Meldingen$Labeltype[Meldingen$Labeltype=="K"] <- "Kitsen"
-Meldingen$Datum <- as.Date(Meldingen$AfschotDatum, "%d/%m/%Y")
+Meldingen$Datum <- as.Date(Meldingen$afschot_datum, "%d/%m/%Y")
 Meldingen$Type <- "Geit"
-Meldingen$Type[Meldingen$GeslachtID==1 & Meldingen$LeeftijdID==17] <- "Bokkits"
-Meldingen$Type[Meldingen$GeslachtID==1 & Meldingen$LeeftijdID==18] <- "Jaarlingbok"
-Meldingen$Type[Meldingen$GeslachtID==1 & Meldingen$LeeftijdID==19] <- "Bok"
-Meldingen$Type[Meldingen$GeslachtID==2 & Meldingen$LeeftijdID==17] <- "Geitkits"
-Meldingen$Type[Meldingen$GeslachtID==2 & Meldingen$LeeftijdID==18] <- "Smalree"
+Meldingen$Type[Meldingen$geslacht_id==1 & Meldingen$leeftijd_id==17] <- "Bokkits"
+Meldingen$Type[Meldingen$geslacht_id==1 & Meldingen$leeftijd_id==18] <- "Jaarlingbok"
+Meldingen$Type[Meldingen$geslacht_id==1 & Meldingen$leeftijd_id==19] <- "Bok"
+Meldingen$Type[Meldingen$geslacht_id==2 & Meldingen$leeftijd_id==17] <- "Geitkits"
+Meldingen$Type[Meldingen$geslacht_id==2 & Meldingen$leeftijd_id==18] <- "Smalree"
 Meldingen$Type <- factor(Meldingen$Type, levels=c("Bokkits","Geitkits","Jaarlingbok","Smalree","Bok","Geit"))
-Meldingen$Gewicht <- Meldingen$OntweidGewicht
-Meldingen$OKG <- rowMeans(subset(Meldingen, select = c(OnderkaaklengteLinks, OnderkaaklengteRechts)), na.rm = TRUE)
-Meldingen$TotEmbryo <- Meldingen$AantalEmbryos
+Meldingen$Gewicht <- Meldingen$ontweid_gewicht
+Meldingen$OKG <- rowMeans(subset(Meldingen, select = c(onderkaaklengte_links, onderkaaklengte_rechts)), na.rm = TRUE)
+Meldingen$TotEmbryo <- Meldingen$aantal_embryos
 
 ##Overzicht wegschrijven voor analyses Afzonderlijk
-tmp <- Meldingen[,c(8,15,46)]
+tmp <- Meldingen[,c(36,38,41)]
 tmp$Type2[tmp$Type=="Bokkits"] <- "RK"
 tmp$Type2[tmp$Type=="Geitkits"] <- "RK"
 tmp$Type2[tmp$Type=="Geit"] <- "RG"
@@ -106,14 +105,14 @@ tmp$Type2 <- factor(tmp$Type2)
 tmp2 <- ddply(tmp, c("NummerAfschotplan","Type2"), summarise,
               value=length(LabelNummer))
 tmp2 <- cast(tmp2, NummerAfschotplan~Type2, sum)
-setwd("Q:/OG_Faunabeheer/Projecten/Lopende projecten/INBOPRJ-10218 - Analyse en rapportage van jachtwilddata in Vlaanderen/Grofwild/Ree/R/2016")
-write.csv(tmp2, file="Meldingen_2016.csv")
+setwd("Q:/OG_Faunabeheer/Projecten/Lopende projecten/INBOPRJ-10218 - Analyse en rapportage van jachtwilddata in Vlaanderen/Grofwild/Ree/R/2017")
+write.csv(tmp2, file="Meldingen_2017.csv")
 remove(tmp, tmp2)
 
 ##Jaren tussen 2013 en huidig jaar apart houden voor vergelijking met voorbije jaren
 Meldingen2015  <- subset(Meldingen, Jaar==2014|Jaar==2015)
-##Vanaf hier gaan we verder met enkel 2015
-Meldingen <- subset(Meldingen, Jaar==2016)
+##Vanaf hier gaan we verder met enkel 2016
+Meldingen2016 <- subset(Meldingen, Jaar==2016)
 
 Dubbels <-as.data.frame(table(Meldingen$LabelNummer))
 Dubbels <- subset(Dubbels, Freq>1)
@@ -121,25 +120,30 @@ names(Dubbels)[names(Dubbels)=="Var1"] <- "LabelNummer"
 Dubbels <- merge(Dubbels,Meldingen, by="LabelNummer", all.x=TRUE)
 Dubbels <- Dubbels[c(1,2,10)]
 
-###Overzichtstabel 2015 voor WBE's
+###Overzichtstabel 2016 voor WBE's
 tabel <- ddply(Meldingen, c("NummerAfschotplan","Type"), summarise,
-               Aantal = length(Labelnummer))
+               Aantal = length(LabelNummer))
 tabel <- cast(tabel, NummerAfschotplan~Type)
 tabel$Totaal <- rowSums(tabel, na.rm=TRUE)
 write.csv(tabel, file="Afschot_WBEs_2016.csv")
 
 Meldingen$controlejaar <- substr(Meldingen$NummerAfschotplan, 7,10)
-controle <- subset(Meldingen, controlejaar!=2015)
+controle <- subset(Meldingen, controlejaar!=2016)
 controle <- controle[c(8:12,15)]
 Meldingen$controlenummer <- substr(Meldingen$NummerAfschotplan, 12,15)
 Meldingen$controlenummer <- as.numeric(Meldingen$controlenummer)
 controle <- subset(Meldingen, controlenummer>100)
 controle <- controle[c(8:12,15)]
 
-
 remove(Dubbels)
-Meldingen2015 <- Meldingen2015[c(40:49, 11)]
-Meldingen2016 <- Meldingen[c(40:49, 11)]
+Meldingen2015 <- Meldingen2015[c(35:44, 11)]
+Meldingen2016 <- Meldingen2016[c(35:44, 11)]
+names(Meldingen2015)[11] <- paste("PostcodeAfschotLocatie")
+names(Meldingen2016)[11] <- paste("PostcodeAfschotLocatie")
+names(Meldingen2015)[2] <- paste("Registernr")
+names(Meldingen2016)[2] <- paste("Registernr")
+names(Meldingen2015)[4] <- paste("Labelnummer")
+names(Meldingen2016)[4] <- paste("Labelnummer")
 
 ##Inladen gegevens jaren tot en met 2013
 Meldingen2013 <- read.csv("Q:/OG_Faunabeheer/Projecten/Lopende projecten/INBOPRJ-10218 - Analyse en rapportage van jachtwilddata in Vlaanderen/Grofwild/Ree/Data/Meldingen_voorbijejaren_postcode.csv",sep=";", dec=",")
@@ -248,8 +252,7 @@ d6$lower[d6$Bin==23] <- NA
 d6$Bin <- as.numeric(d6$Bin)
 
 
-p <-
-  ggplot(d6, aes(x=Bin)) +
+ggplot(d6, aes(x=Bin)) +
   geom_bar(aes(y=VorigeJaren), stat="identity", alpha=1, width=0.75) +
   geom_point(aes(y=Jaar2015), size=6, colour="#688599") +
   geom_errorbar(aes(ymax=upper, ymin=lower), colour="brown", width=0.2)+
@@ -264,8 +267,6 @@ p <-
   labels=c("Januari","Februari","Maart","April","Mei","Juni","Juli","Augustus","September","Oktober","November","December","")) +
   theme(axis.text.x = element_text(angle=90, hjust=0, vjust=3.5))+
   coord_cartesian(ylim = c(0, 30))
-
-print(p)
 
 ###Working directory voor opslaan figuren
 setwd("Q:/OG_Faunabeheer/Projecten/Lopende projecten/INBOPRJ-10218 - Analyse en rapportage van jachtwilddata in Vlaanderen/Grofwild/Ree/Figuren")
@@ -291,14 +292,12 @@ Gewicht <- subset(Gewicht, Gewicht<30.1)
 Gewicht <- subset(Gewicht, Gewicht>4.9)
 Gewicht <- subset(Gewicht, Jaar=="2016")
 
-p <-
-  ggplot(Gewicht, aes(x=Type, y=Gewicht)) + 
+ggplot(Gewicht, aes(x=Type, y=Gewicht)) + 
   geom_boxplot(width=0.75, colour=INBOreddishbrown, outlier.colour=INBOreddishbrown) + 
   ylab("Gewicht (kg)") +
   scale_x_discrete(limits=c("Geitkits","Bokkits","Jaarlingbok","Smalree","Geit","Bok"))+
   scale_y_continuous(breaks=c(5,10,15,20,25)) +
   theme_INBO()
-print(p)
 
 summary(Gewicht$Gewicht~Gewicht$Type)
 
@@ -320,14 +319,13 @@ Onderkaak <- subset(Onderkaak, OKG<200)
 Onderkaak <- subset(Onderkaak, Jaar=="2016")
 
 ###plot
-p <-
-  ggplot(Onderkaak, aes(x=Type, y=OKG)) + 
+
+ggplot(Onderkaak, aes(x=Type, y=OKG)) + 
   geom_boxplot(width=0.75, colour=INBOreddishbrown, outlier.colour=INBOreddishbrown) + 
   ylab("Onderkaaklengte (mm)") +
   scale_x_discrete(limits=c("Geitkits","Bokkits","Jaarlingbok","Smalree","Geit","Bok"))+
   scale_y_continuous(breaks=c(125,150,175)) +
   theme_INBO()
-print(p)
 
 summary(Onderkaak$OKG~Onderkaak$Type)
 
@@ -379,8 +377,7 @@ DRACHT2b$Embryo[DRACHT2b$Embryo=="NIET INGEVULD"] <- "Niet ingevuld"
 
 cols <- c("Niet ingevuld"="grey70","0"="#989868", "1"="#688599", "2"="#CC3D3D", "3"="#EEB600")
 
-p <-
-  ggplot(DRACHT2b, aes(x=Jaar, y=Aantal, fill=Embryo)) + 
+ggplot(DRACHT2b, aes(x=Jaar, y=Aantal, fill=Embryo)) + 
   geom_bar(stat="identity", width=0.75) + 
   scale_fill_manual(values=cols) +
   ylab("Aantal vrouwelijke ree?n") + 
@@ -392,7 +389,6 @@ p <-
   geom_text(aes(y = -20, label = TotaalAantal), size=3.5)  +
   scale_x_discrete(limits=c("2007","2008","2009","2010","2011","2012","2013","2014","2015","2016"))+
   theme_INBO()
-print(p)
 
 DRACHT3 <- subset(DRACHT, Embryo!="NIET INGEVULD")
 DRACHT3$Embryo <- as.numeric(DRACHT3$Embryo)
